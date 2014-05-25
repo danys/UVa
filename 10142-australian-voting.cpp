@@ -13,6 +13,7 @@ int ballot[maxlines][maxcandidates];
 double votes[maxcandidates];
 bool currentcandidates[maxcandidates];
 int winners[maxcandidates];
+int ncandid;
 
 void init()
 {
@@ -27,7 +28,7 @@ void init()
 
 void reset()
 {
-    for(int i=0;i<ncandidates;i++) votes[i]=0;
+    for(int i=0;i<ncandidates;i++) votes[i]=0.0;
 }
 
 int getwinnerindex()
@@ -40,6 +41,7 @@ int getwinnerindex()
         {
             winnerindex = i;
             nwinners++;
+            break;
         }
     }
     return (nwinners==1)? winnerindex : -1;
@@ -59,54 +61,70 @@ double getlowestvalue()
     return minvalue;
 }
 
-void deleteentries(double value, int round)
+double gethighestvalue()
+{
+    double maxvalue = 0.0;
+    for(int i=0;i<ncandidates;i++)
+    {
+        if (!currentcandidates[i]) continue;
+        if (votes[i]>maxvalue)
+        {
+            maxvalue = votes[i];
+        }
+    }
+    return maxvalue;
+}
+
+void deleteentries(double value)
 {
     for(int i=0;i<ncandidates;i++)
     {
+        if (!currentcandidates[i]) continue;
         if (votes[i]==value)
         {
             currentcandidates[i]=false;
-            //delete ballot entry with index = i+1
-            for(int l=0;l<nlines;l++)
-            {
-                bool f = false;
-                for(int col=0;col<ncandidates-round;col++)
-                {
-                    if (ballot[l][col]==i+1) f=true;
-                    if ((f) && (col+1<ncandidates-round)) ballot[l][col]=ballot[l][col+1];
-                    else if((f) && (col+1==ncandidates-round)) ballot[l][col]=0;
-                }
-            }
+            ncandid--;
         }
     }
 }
 
+int getnexti(int i)
+{
+    int j=0;
+    while(currentcandidates[ballot[i][j]-1]==false) j++;
+    return j;
+}
+
 int computewinner()
 {
-    bool found = false;
-    int round = 0;
-    int winnerindex=-1;
     for(int i=0;i<ncandidates;i++) currentcandidates[i]=true;
-    while((found==false) && (round<ncandidates))
+    if (nlines==0) return -1;
+    ncandid = ncandidates;
+    double low, high;
+    int winnerindex=-1;
+    while(ncandid>0)
     {
         reset();
         for(int i=0;i<nlines;i++)
         {
-            if (ballot[i][0]>0) votes[ballot[i][0]-1]++;
+            if (ballot[i][getnexti(i)]>0) votes[ballot[i][getnexti(i)]-1]++;
         }
         for(int i=0;i<ncandidates;i++)
         {
-            votes[i]=(double)(votes[i]/(double)nlines)*100.0;
+            votes[i]=(double)((double)votes[i]/(double)nlines)*100.0;
         }
         winnerindex = getwinnerindex();
-        if (winnerindex!=-1) found = true;
+        low = getlowestvalue();
+        high = gethighestvalue();
+        if ((winnerindex!=-1) || (low==high))
+        {
+            break;
+        }
         else
         {
-            //find lowest voted candidate
-            //delete that candidate
-            deleteentries(getlowestvalue(),round);
+            //find lowest voted candidates and delete them
+            deleteentries(low);
         }
-        round++;
     }
     return winnerindex;
 }
@@ -118,9 +136,9 @@ int main()
     getline(cin,line);
     stringstream sstr(line);
     sstr >> T;
+    getline(cin,line); //blank line
     for(int t=1;t<=T;t++)
     {
-        getline(cin,line); //blank line
         getline(cin,line); //number of candidates
         stringstream nstr(line);
         nstr >> ncandidates;
@@ -147,7 +165,7 @@ int main()
             for(int i=0;i<ncandidates;i++)
                 if (currentcandidates[i]==true) cout << candidates[i] << endl;
         }
-        cout << endl;
+        if (t!=T) cout << endl;
     }
     return 0;
 }
