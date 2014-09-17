@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <string.h>
 
 using namespace std;
 
@@ -8,37 +9,112 @@ using namespace std;
 #define maxwords 80
 #define alphalen 26
 
-string linewords[maxlines][maxwords];
-char table[alphalen];
-int fox[26][10];
 
-void filltable(int i)
+char table[alphalen];
+
+string lines[maxlines];
+string linewords[maxlines][maxwords];
+int linewordsnwords[maxlines];
+int linewordswordlen[maxlines][maxwords];
+
+string foxstr = "the quick brown fox jumps over the lazy dog";
+int fox[alphalen][maxwords]; //stores char information about the known sentence
+int foxlen[alphalen]; //stores length of second dimension of fox
+int foxlen1; //stores length of first dimension of fox
+int foxnwords;
+int foxwordlen[maxwords];
+
+bool filltable(int i)
 {
-    if (i==-1) return;
-    //
+    if (i==-1) return false;
+    memset(table,-1,sizeof(char)*alphalen);
+    for(unsigned int j=0;j<lines[i].length();j++)
+    {
+        if ((table[foxstr[j]-'a']!=-1) && (table[foxstr[j]-'a']!=lines[i][j])) return false;
+        table[foxstr[j]-'a']=lines[i][j];
+    }
+    int t[alphalen];
+    memset(t,0,sizeof(int)*alphalen);
+    for(int j=0;j<alphalen;j++) t[table[j]-'a']++;
+    for(int j=0;j<alphalen;j++) if (t[i]>1) return false;
+    return true;
+}
+
+bool ismatch(int i)
+{
+    if (linewordsnwords[i]!=foxnwords) return false;
+    for(int j=0;j<foxnwords;j++) if (foxwordlen[i]!=linewordswordlen[i][j]) return false;
+    char c;
+    for(int d1=0;d1<foxlen1;d1++)
+    {
+        c = 0;
+        for(int d2=0;d2<foxlen[d1];d2++)
+        {
+            if (c==0) c = lines[i][fox[d1][d2]];
+            else if (lines[i][fox[d1][d2]]!=c) return false;
+        }
+    }
+    return filltable(i);
+}
+
+string replacestr(int i)
+{
+    string s = lines[i];
+    for(unsigned int j=0;j<s.length();j++) s[j]=table[s[j]-'a'];
+    return s;
 }
 
 int solve(int rows)
 {
-    for(int i=0;i<rows;i++)
-    {
-
-    }
+    for(int i=0;i<rows;i++) if (ismatch(i)) return i;
+    return -1;
 }
 
-void replacelines(int knownrow)
+void replacelines(int rows,int r)
 {
-    //
+    if (r==-1) cout << "No solution." << endl;
+    else
+    {
+        for(int i=0;i<rows;i++)
+        {
+          if (i==r) cout << "the quick brown fox jumps over the lazy dog" << endl;
+          else cout << replacestr(i) << endl;
+        }
+    }
 }
 
 void buildfox()
 {
-    string str = "the quick brown fox jumps over the lazy dog";
-    bool a[alphalen];
-    memset(a,0,sizeof(bool)*alphalen);
-    for(int i=0;i<str.length();i++)
+    string str = foxstr;
+    int a[alphalen][maxwords];
+    int len[alphalen];
+    int currentlen=0;
+    bool used[alphalen];
+    memset(a,-1,sizeof(bool)*alphalen*maxwords);
+    memset(len,0,sizeof(int)*alphalen);
+    memset(used,0,sizeof(bool)*alphalen);
+    for(unsigned int i=0;i<foxstr.length();i++) a[foxstr[i]-'a'][len[foxstr[i]-'a']++]=i;
+    foxlen1=0;
+    foxnwords=0;
+    for(unsigned int i=0;i<foxstr.length();i++)
     {
-
+        if (used[foxstr[i]-'a']) continue;
+        if (foxstr[i]==' ')
+        {
+            foxwordlen[foxnwords]=currentlen;
+            foxnwords++;
+            currentlen=0;
+        }
+        else currentlen++;
+        for(int j=0;j<len[foxstr[i]-'a'];j++)
+        {
+            if (a[foxstr[i]-'a'][j]==-1) break;
+            fox[i][j]=a[foxstr[i]-'a'][j];
+        }
+        used[foxstr[i]-'a']=true;
+        foxlen[i]=len[foxstr[i]-'a'];
+        foxlen1++;
+        foxnwords++;
     }
 }
 
@@ -49,22 +125,29 @@ int main()
     cin.ignore();
     string line, word;
     stringstream ss;
-    int row,col,knownrow;
+    int row,col;
+    buildfox();
     for(int z=1;z<=cases;z++)
     {
         getline(cin,line); //blank line
         row=0;
-        col=0;
         while(getline(cin,line))
         {
             ss.str(line);
-            while(ss >> word) linewords[row][col++] = word;
+            lines[row] = line;
+            col=0;
+            while(ss >> word)
+            {
+                linewords[row][col++] = word;
+		linewordswordlen[row][col++] = word.length();
+            }
+            linewordsnwords[row]=col;
             row++;
             ss.clear();
         }
-        knownrow = solve(row);
-        filltable(knownrow);
-        replacelines(knownrow);
+        replacelines(row,solve(row));
+        if (z!=cases) cout << endl;
     }
     return 0;
 }
+
