@@ -18,8 +18,8 @@ int linewordsnwords[maxlines];
 int linewordswordlen[maxlines][maxwords];
 
 string foxstr = "the quick brown fox jumps over the lazy dog";
-int fox[alphalen][maxwords]; //stores char information about the known sentence
-int foxlen[alphalen]; //stores length of second dimension of fox
+int fox[maxwords][maxwords]; //stores char information about the known sentence
+int foxlen[maxwords]; //stores length of second dimension of fox
 int foxlen1; //stores length of first dimension of fox
 int foxnwords;
 int foxwordlen[maxwords];
@@ -30,8 +30,9 @@ bool filltable(int i)
     memset(table,-1,sizeof(char)*alphalen);
     for(unsigned int j=0;j<lines[i].length();j++)
     {
-        if ((table[foxstr[j]-'a']!=-1) && (table[foxstr[j]-'a']!=lines[i][j])) return false;
-        table[foxstr[j]-'a']=lines[i][j];
+        if (foxstr[j]==' ') continue;
+        if ((table[lines[i][j]-'a']!=-1) && (table[lines[i][j]-'a']!=foxstr[j])) return false;
+        table[lines[i][j]-'a']=foxstr[j];
     }
     int t[alphalen];
     memset(t,0,sizeof(int)*alphalen);
@@ -43,14 +44,15 @@ bool filltable(int i)
 bool ismatch(int i)
 {
     if (linewordsnwords[i]!=foxnwords) return false;
-    for(int j=0;j<foxnwords;j++) if (foxwordlen[i]!=linewordswordlen[i][j]) return false;
+    for(int j=0;j<foxnwords;j++) if (foxwordlen[j]!=linewordswordlen[i][j]) return false;
     char c;
     for(int d1=0;d1<foxlen1;d1++)
     {
         c = 0;
+        if (foxlen[d1]<=1) continue;
         for(int d2=0;d2<foxlen[d1];d2++)
         {
-            if (c==0) c = lines[i][fox[d1][d2]];
+            if (d2==0) c = lines[i][fox[d1][0]];
             else if (lines[i][fox[d1][d2]]!=c) return false;
         }
     }
@@ -60,7 +62,7 @@ bool ismatch(int i)
 string replacestr(int i)
 {
     string s = lines[i];
-    for(unsigned int j=0;j<s.length();j++) s[j]=table[s[j]-'a'];
+    for(unsigned int j=0;j<s.length();j++) if(s[j]!=' ') s[j]=table[s[j]-'a'];
     return s;
 }
 
@@ -86,36 +88,41 @@ void replacelines(int rows,int r)
 void buildfox()
 {
     string str = foxstr;
-    int a[alphalen][maxwords];
-    int len[alphalen];
+    int a[maxwords][maxwords];
+    int len[maxwords];
     int currentlen=0;
     bool used[alphalen];
-    memset(a,-1,sizeof(bool)*alphalen*maxwords);
-    memset(len,0,sizeof(int)*alphalen);
+    memset(a,-1,sizeof(bool)*maxwords*maxwords);
+    memset(len,0,sizeof(int)*maxwords);
     memset(used,0,sizeof(bool)*alphalen);
-    for(unsigned int i=0;i<foxstr.length();i++) a[foxstr[i]-'a'][len[foxstr[i]-'a']++]=i;
+    memset(foxlen,0,sizeof(int)*maxwords);
+    for(unsigned int i=0;i<foxstr.length();i++) if (foxstr[i]!=' ') a[foxstr[i]-'a'][len[foxstr[i]-'a']++]=i;
     foxlen1=0;
     foxnwords=0;
     for(unsigned int i=0;i<foxstr.length();i++)
     {
-        if (used[foxstr[i]-'a']) continue;
+        if (used[foxstr[i]-'a']) {currentlen++;continue;}
         if (foxstr[i]==' ')
         {
             foxwordlen[foxnwords]=currentlen;
             foxnwords++;
             currentlen=0;
         }
-        else currentlen++;
-        for(int j=0;j<len[foxstr[i]-'a'];j++)
+        else
         {
-            if (a[foxstr[i]-'a'][j]==-1) break;
-            fox[i][j]=a[foxstr[i]-'a'][j];
+            currentlen++;
+            for(int j=0;j<len[foxstr[i]-'a'];j++)
+            {
+                if (a[foxstr[i]-'a'][j]==-1) break;
+                fox[i][j]=a[foxstr[i]-'a'][j];
+            }
+            used[foxstr[i]-'a']=true;
+            foxlen[i]=len[foxstr[i]-'a'];
         }
-        used[foxstr[i]-'a']=true;
-        foxlen[i]=len[foxstr[i]-'a'];
-        foxlen1++;
-        foxnwords++;
     }
+    foxwordlen[foxnwords]=currentlen;
+    foxlen1 = foxstr.length();
+    foxnwords++;
 }
 
 int main()
@@ -127,19 +134,20 @@ int main()
     stringstream ss;
     int row,col;
     buildfox();
+    getline(cin,line); //blank line
     for(int z=1;z<=cases;z++)
     {
-        getline(cin,line); //blank line
         row=0;
         while(getline(cin,line))
         {
+            if (line.empty()) break;
             ss.str(line);
             lines[row] = line;
             col=0;
             while(ss >> word)
             {
                 linewords[row][col++] = word;
-		linewordswordlen[row][col++] = word.length();
+                linewordswordlen[row][col-1] = word.length();
             }
             linewordsnwords[row]=col;
             row++;
