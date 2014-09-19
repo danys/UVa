@@ -36,8 +36,11 @@ bool filltable(int i)
     }
     int t[alphalen];
     memset(t,0,sizeof(int)*alphalen);
-    for(int j=0;j<alphalen;j++) t[table[j]-'a']++;
-    for(int j=0;j<alphalen;j++) if (t[i]>1) return false;
+    for(int j=0;j<alphalen;j++)
+    {
+        t[table[j]-'a']++;
+        if (t[table[j]-'a']>1) return false;
+    }
     return true;
 }
 
