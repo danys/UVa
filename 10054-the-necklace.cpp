@@ -21,7 +21,6 @@ bool visited[maxbeads];
 
 bool dfs(int n, int startnode, int k, bool orientation)
 {
-    cout << "DFS n= " << n << " k = " << k << " startnode = " << startnode << " orient = " << orientation << endl;
     node* currentnode = graph[startnode];
 	visited[startnode]=true;
 	if (orientation)
@@ -36,17 +35,23 @@ bool dfs(int n, int startnode, int k, bool orientation)
 	}
 	if (k==n-1)
 	{
-		if ((orientation) && (cycle[0].color1==cycle[k].color2)) return true;
-		else if ((!orientation) && (cycle[0].color1==cycle[k].color1)) return true;
+        if (cycle[0].color1==cycle[k].color2) return true;
 		else return false;
 	}
 	while(currentnode->next!=NULL)
 	{
-		if (visited[currentnode->next->index]) continue;
-		if (graph[currentnode->next->index]->color1==currentnode->color2) dfs(n,currentnode->next->index,k+1,true);
-		else dfs(n,currentnode->next->index,k+1,false);
+		if (!visited[currentnode->next->index])
+        {
+            if (graph[currentnode->next->index]->color1==cycle[k].color2)
+            {
+                if(dfs(n,currentnode->next->index,k+1,true)) return true;
+            }
+            else if (graph[currentnode->next->index]->color2==cycle[k].color2)
+            {
+                if(dfs(n,currentnode->next->index,k+1,false)) return true;
+            }
+        }
 		currentnode = currentnode->next;
-		cout << "Hoi" << endl;
 	}
 	return false;
 }
@@ -66,6 +71,7 @@ void buildgraph(int n)
 	{
 		fromnode = graph[i];
 		currentnode = fromnode;
+		while(currentnode->next!=NULL) currentnode = currentnode->next;
 		for(int j=0;j<n;j++)
 		{
 			if (i==j) continue;
@@ -122,6 +128,8 @@ int main()
 		cout << "Case #" << z << endl;
 		if ((solve(n,0,0,true)) || (solve(n,0,0,false))) printresult(n);
 		else cout << "some beads may be lost" << endl;
+		if ((n>1) && (z!=cases)) cout << endl;
 		dealloc(n);
+		printresult(n);
 	}
 }
