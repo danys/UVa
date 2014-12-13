@@ -1,135 +1,111 @@
 #include <iostream>
 #include <string.h>
 
-#define maxbeads 1000
+#define maxcolors 50
 
 using namespace std;
 
 struct node
 {
-	int index;
-	int color1;
-	int color2;
-	bool orientation;
-	node* next; //adjacency list
+    int index;
+    node* next;
 };
 
-node cycle[maxbeads]; //result chain of nodes
-
-node* graph[maxbeads];
-bool visited[maxbeads];
-
-bool dfs(int n, int startnode, int k, bool orientation)
+struct graph
 {
-    node* currentnode = graph[startnode];
-	visited[startnode]=true;
-	if (orientation)
-	{
-		cycle[k].color1=currentnode->color1;
-		cycle[k].color2=currentnode->color2;
-	}
-	else
-	{
-		cycle[k].color1=currentnode->color2;
-		cycle[k].color2=currentnode->color1;
-	}
-	if (k==n-1)
-	{
-        if (cycle[0].color1==cycle[k].color2) return true;
-		else return false;
-	}
-	while(currentnode->next!=NULL)
-	{
-		if (!visited[currentnode->next->index])
+    node* nodes[maxcolors+1];
+    node* headnodes[maxcolors+1];
+    int degree[maxcolors+1];
+};
+
+bool visitededge[maxcolors][maxcolors];
+int result[maxcolors];
+
+graph g;
+
+bool dfs(int n,int startnode,int currentnode, int k)
+{
+    result[k]=currentnode;
+    if ((k==n) && (startnode==currentnode)) return true;
+    node* cur = g.nodes[currentnode];
+    while(cur->next!=NULL)
+    {
+        if (!visitededge[currentnode][cur->next->index])
         {
-            if (graph[currentnode->next->index]->color1==cycle[k].color2)
+            visitededge[currentnode][cur->next->index]=true;
+            visitededge[cur->next->index][currentnode]=true;
+            if (dfs(n,startnode,cur->next->index,k+1)) return true;
+            else
             {
-                if(dfs(n,currentnode->next->index,k+1,true)) return true;
-            }
-            else if (graph[currentnode->next->index]->color2==cycle[k].color2)
-            {
-                if(dfs(n,currentnode->next->index,k+1,false)) return true;
+                visitededge[currentnode][cur->next->index]=false;
+                visitededge[cur->next->index][currentnode]=false;
             }
         }
-		currentnode = currentnode->next;
-	}
-	return false;
+        cur = cur->next;
+    }
+    return false;
 }
 
-bool solve(int n, int startnode, int k, bool orientation)
+bool solve(int n, int startnode)
 {
-	memset(visited,false,sizeof(bool)*maxbeads);
-	return dfs(n,startnode,k,orientation);
+    for(int i=0;i<maxcolors+1;i++) if (g.degree[i]%2!=0) return false;
+    return dfs(n,startnode,startnode,0);
 }
 
-void buildgraph(int n)
+void insertnode(int color1, int color2)
 {
-	node* fromnode;
-	node* tonode;
-	node* currentnode;
-	for(int i=0;i<n;i++)
-	{
-		fromnode = graph[i];
-		currentnode = fromnode;
-		while(currentnode->next!=NULL) currentnode = currentnode->next;
-		for(int j=0;j<n;j++)
-		{
-			if (i==j) continue;
-			tonode = graph[j];
-			if ((fromnode->color1==tonode->color1) || (fromnode->color1==tonode->color2) || (fromnode->color2==tonode->color1) || (fromnode->color2==tonode->color2))
-			{
-				currentnode->next = new node();
-				currentnode->next->index=j;
-				currentnode = currentnode->next;
-				currentnode->next=NULL;
-			}
-		}
-	}
-}
-
-void insertnode(int i, int c1,int c2)
-{
-	node* currentnode = graph[i];
-	currentnode->color1 = c1;
-	currentnode->color2 = c2;
-	currentnode->orientation = true;
-	currentnode->next = NULL;
-}
-
-void printresult(int n)
-{
-	for(int i=0;i<n;i++) cout << cycle[i].color1 << " " << cycle[i].color2 << endl;
+    g.degree[color1]++;
+    g.degree[color2]++;
+    node* nhead1 = g.headnodes[color1];
+    node* nhead2 = g.headnodes[color2];
+    nhead1->next = new node();
+    nhead1->next->index=color2;
+    nhead1->next->next=NULL;
+    nhead2->next = new node();
+    nhead2->next->index=color1;
+    nhead2->next->next=NULL;
+    g.headnodes[color1]=nhead1->next;
+    g.headnodes[color2]=nhead2->next;
 }
 
 void init(int n)
 {
-    for(int i=0;i<n;i++) graph[i] = new node();
+    for(int i=0;i<n;i++)
+    {
+        g.nodes[i] = new node();
+        g.nodes[i]->index = i;
+        g.nodes[i]->next = NULL;
+        g.headnodes[i] = g.nodes[i];
+        g.degree[i]=0;
+    }
 }
 
-void dealloc(int n)
+void printresult(int n)
 {
-    for(int i=0;i<n;i++) delete graph[i];
+    for(int i=0;i<n;i++)    cout << result[i] << " " << result[i+1] << endl;
 }
 
 int main()
 {
-	int cases, n, color1, color2;
+	int cases, n, color1, color2, temp;
 	cin >> cases;
+	init(maxcolors+1);
 	for(int z=1;z<=cases;z++)
 	{
 		cin >> n;
-        init(n);
+		memset(g.degree,0,sizeof(g.degree));
+		temp=-1;
 		for(int i=0;i<n;i++)
 		{
 			cin >> color1 >> color2;
-			insertnode(i,color1,color2);
+			if (temp==-1) temp = color1;
+			insertnode(color1,color2);
 		}
-		buildgraph(n);
+		memset(visitededge,false,sizeof(visitededge));
 		cout << "Case #" << z << endl;
-		if ((solve(n,0,0,true)) || (solve(n,0,0,false))) printresult(n);
-		else cout << "some beads may be lost" << endl;
+		if (!solve(n,temp)) cout << "some beads may be lost" << endl;
+		else printresult(n);
 		if ((n>1) && (z!=cases)) cout << endl;
-		dealloc(n);
-		printresult(n);
 	}
+	return 0;
 }
