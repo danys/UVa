@@ -13,9 +13,10 @@ struct conn
 
 vector<vector<pair<int,conn> > > graph;
 vector<string> cities;
-int scenarios,ncities,solstartt,solendt,solstarti,solendi;
+int scenarios,ncities,solstartt,solendt,solstarti,solendi,T;
 vector<int> traint;
 vector<int> traini;
+vector<bool> visited;
 
 void createNode()
 {
@@ -36,17 +37,15 @@ void insertEdge(int x, int y, int startt, int endt)
 
 void insertTrain()
 {
-	int startindex,endindex,starttime,endtime;
-	for(int i=0;i<traint.size();i++)
+	int startindex,endindex,starttime,endtime,j;
+	for(int i=0;i<traint.size()-1;i++)
 	{
-		for(int j=i+1;j<traint.size();j++)
-		{
-			startindex = traini[i];
-			endindex = traini[j];
-			starttime = traint[i];
-			endtime = traint[j];
-			insertEdge(endindex,startindex,starttime,endtime);
-		}
+		j=i+1;
+		startindex = traini[i];
+		endindex = traini[j];
+		starttime = traint[i];
+		endtime = traint[j];
+		insertEdge(endindex,startindex,starttime,endtime);
 	}
 }
 
@@ -60,7 +59,8 @@ int getCityID(string citystr)
 
 bool dfs(int x,int goal,int minstartt,int k,int currentendt,int currentstartt)
 {
-	if (k>100) return false; //avoid cycles in the graph
+	//visited[x]=true;
+	if (k>T) return false; //avoid cycles in the graph
 	if (x==goal)
 	{
 		if (solendt!=-1)
@@ -93,8 +93,10 @@ bool dfs(int x,int goal,int minstartt,int k,int currentendt,int currentstartt)
 		p = v[i];
 		nextnode = p.first;
 		c = p.second;
+		if ((k==0) && (solendt!=-1) && (solendt<c.endt)) continue; 
 		if ((nextnode==goal) && (c.startt<minstartt)) continue; //in case the train starts too early
-		if (currentstartt<c.endt) continue;//TODO
+		if ((k!=0) && (c.endt>currentstartt)) continue;
+		//if (visited[nextnode]) continue;
 		if (k==0) b = dfs(nextnode,goal,minstartt,k+1,c.endt,c.startt);
 		else b = dfs(nextnode,goal,minstartt,k+1,currentendt,c.startt);
 		if (!ret) ret = b;
@@ -118,19 +120,22 @@ string tostrtime(int time)
 int main()
 {
 	cin >> scenarios;
-	int T,n,time,startt,cid,starti,endi;
+	int n,time,startt,cid,starti,endi;
 	string startc,destc;
-	bool unreachable;
+	bool unreachable/*,vis*/;
 	for(int z=1;z<=scenarios;z++)
 	{
 		graph.clear();
+		//visited.clear();
 		cin >> ncities;
 		cities.clear();
 		string citystr;
+		//vis=false;
 		for(int c=1;c<=ncities;c++)
 		{
 			cin >> citystr;
 			cities.push_back(citystr);
+			//visited.push_back(vis);
 			createNode();
 		}
 		cin >> T;
@@ -145,8 +150,8 @@ int main()
 				cid = getCityID(citystr);
 				traini.push_back(cid);
 				traint.push_back(time);
-				insertTrain();
 			}
+			insertTrain();
 		}
 		cin >> startt;
 		cin >> startc;
@@ -160,8 +165,8 @@ int main()
 		solendt = -1;
 		if ((!unreachable) && (solve(startt,starti,endi)))
 		{
-			cout << "Departure " << tostrtime(solstartt) << " " << /*cities[solstarti]*/startc << endl;
-			cout << "Arrival " << tostrtime(solendt) << " " << /*cities[solendi]*/destc << endl;
+			cout << "Departure " << tostrtime(solstartt) << " " << startc << endl;
+			cout << "Arrival " << tostrtime(solendt) << " " << destc << endl;
 		}
 		else cout << "No connection" << endl;
 		if (z!=scenarios) cout << endl;
