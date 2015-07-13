@@ -1,174 +1,107 @@
 #include <iostream>
-#include <vector>
-#include <utility>
 #include <string>
+#include <vector>
+#include <unordered_map>
+
+#define maxcities 100
+#define maxminutesinday 1440
 
 using namespace std;
 
-struct conn
-{
-	int startt;
-	int endt;
-};
+int scenarios,ncities,starti,endi,startt;
+string cities[maxcities];
+unordered_map<string,int> citymap;
+vector<vector<pair<int,int> > > trains;
+vector<vector<pair<int,int> > > graph;
+vector<vector<int> > vtimes;
 
-vector<vector<pair<int,conn> > > graph;
-vector<string> cities;
-int scenarios,ncities,solstartt,solendt,solstarti,solendi,T;
-vector<int> traint;
-vector<int> traini;
-vector<bool> visited;
-
-void createNode()
+int dfs(int node, int maxt)
 {
-	vector<pair<int,conn> > v;
-	graph.push_back(v);
-}
-
-void insertEdge(int x, int y, int startt, int endt)
-{
-	vector<pair<int,conn> > v = graph[x];
-	conn c;
-	c.startt = startt;
-	c.endt = endt;
-	pair<int,conn> p(y,c);
-	v.push_back(p);
-	graph[x] = v;
-}
-
-void insertTrain()
-{
-	int startindex,endindex,starttime,endtime,j;
-	for(int i=0;i<traint.size()-1;i++)
+	if ((node==starti) && (maxt>=startt)) return vtimes[node][maxt]=maxt;
+	if (node==starti) return -1;
+	if (vtimes[node][maxt]!=-1) return vtimes[node][maxt];
+	int train,stop,t,nextnode;
+	for(unsigned int i=0;i<graph[node].size();i++)
 	{
-		j=i+1;
-		startindex = traini[i];
-		endindex = traini[j];
-		starttime = traint[i];
-		endtime = traint[j];
-		insertEdge(endindex,startindex,starttime,endtime);
-	}
-}
-
-//O(N) city ID search
-int getCityID(string citystr)
-{
-	for(int i=0;i<cities.size();i++)
-		if (cities[i]==citystr) return i;
-	return -1;
-}
-
-bool dfs(int x,int goal,int minstartt,int k,int currentendt,int currentstartt)
-{
-	//visited[x]=true;
-	if (k>T) return false; //avoid cycles in the graph
-	if (x==goal)
-	{
-		if (solendt!=-1)
+		train = graph[node][i].first;
+		stop = graph[node][i].second;
+		t = trains[train][stop].first;
+		if (t>maxt) continue;
+		for(int j=0;j<stop;j++)
 		{
-			if (currentendt<solendt)
-			{
-				solstartt = currentstartt;
-				solendt = currentendt;
-			}
-			else if (currentendt==solendt)
-			{
-				if (currentstartt>solstartt) solstartt = currentstartt;
-			}
+			nextnode = trains[train][j].second;
+			vtimes[node][t] = max(vtimes[node][t],dfs(nextnode,trains[train][j].first));
 		}
-		else
-		{
-			solstartt = currentstartt;
-			solendt = currentendt;
-		}
-		return true;
+		vtimes[node][maxt] = max(vtimes[node][maxt],vtimes[node][t]);
 	}
-	bool b,ret;
-	ret=false;
-	vector<pair<int,conn> > v = graph[x];
-	int nextnode;
-	pair<int,conn> p;
-	conn c;
-	for(int i=0;i<v.size();i++)
-	{
-		p = v[i];
-		nextnode = p.first;
-		c = p.second;
-		if ((k==0) && (solendt!=-1) && (solendt<c.endt)) continue; 
-		if ((nextnode==goal) && (c.startt<minstartt)) continue; //in case the train starts too early
-		if ((k!=0) && (c.endt>currentstartt)) continue;
-		//if (visited[nextnode]) continue;
-		if (k==0) b = dfs(nextnode,goal,minstartt,k+1,c.endt,c.startt);
-		else b = dfs(nextnode,goal,minstartt,k+1,currentendt,c.startt);
-		if (!ret) ret = b;
-	}
-	//if no solution found so far => false
-	return ret;
-}
-
-bool solve(int startt, int starti, int endi)
-{
-	return dfs(endi,starti,startt,0,-1,-1);
-}
-
-string tostrtime(int time)
-{
-	string s = to_string(time);
-	if (time>=1000) return s;
-	else return '0'+s;
+	return vtimes[node][maxt];
 }
 
 int main()
 {
 	cin >> scenarios;
-	int n,time,startt,cid,starti,endi;
-	string startc,destc;
-	bool unreachable/*,vis*/;
+	int ntrains,nstops,t,cityi,stime,etime;
+	string cityname,startc,endc;
 	for(int z=1;z<=scenarios;z++)
 	{
-		graph.clear();
-		//visited.clear();
 		cin >> ncities;
-		cities.clear();
-		string citystr;
-		//vis=false;
-		for(int c=1;c<=ncities;c++)
+		citymap.clear();
+		trains.clear();
+		graph.clear();
+		vtimes.clear();
+		graph = vector<vector<pair<int,int> > >(ncities);
+		vtimes = vector<vector<int> >(ncities);
+		for(int i=0;i<ncities;i++)
 		{
-			cin >> citystr;
-			cities.push_back(citystr);
-			//visited.push_back(vis);
-			createNode();
+			cin >> cities[i];
+			citymap[cities[i]]=i;
+			vtimes[i].clear();
+			for(int j=0;j<maxminutesinday;j++) vtimes[i].push_back(-1);
 		}
-		cin >> T;
-		for(int t=1;t<=T;t++)
+		cin >> ntrains;
+		trains = vector<vector<pair<int,int> > >(ntrains);
+		for(int i=0;i<ntrains;i++)
 		{
-			cin >> n;
-			traint.clear();
-			traini.clear();
-			for(int i=0;i<n;i++)
+			cin >> nstops;
+			for(int j=0;j<nstops;j++)
 			{
-				cin >> time >> citystr;
-				cid = getCityID(citystr);
-				traini.push_back(cid);
-				traint.push_back(time);
+				cin >> t >> cityname;
+				cityi = citymap[cityname];
+				trains[i].push_back(pair<int,int>((t/100)*60+t%100,cityi));
+				graph[cityi].push_back(pair<int,int>(i,j));
 			}
-			insertTrain();
 		}
 		cin >> startt;
+		startt = (startt/100)*60+startt%100;
 		cin >> startc;
-		cin >> destc;
-		starti = getCityID(startc);
-		endi = getCityID(destc);
-		unreachable = false;
-		if ((starti==-1) || (endi==-1)) unreachable=true;
-		cout << "Scenario " << z << endl;
-		solstartt = -1;
-		solendt = -1;
-		if ((!unreachable) && (solve(startt,starti,endi)))
+		starti = citymap[startc];
+		cin >> endc;
+		endi = citymap[endc];
+		dfs(endi,maxminutesinday-1);
+		stime=-1;
+		etime=1e9;
+		int train,stop,t;
+		for(unsigned int i=0;i<graph[endi].size();i++)
 		{
-			cout << "Departure " << tostrtime(solstartt) << " " << startc << endl;
-			cout << "Arrival " << tostrtime(solendt) << " " << destc << endl;
+			train = graph[endi][i].first;
+			stop = graph[endi][i].second;
+			t = trains[train][stop].first;
+			if (vtimes[endi][t]!=-1)
+			{
+				if ((t<etime) || (etime - stime > t - vtimes[ endi ][ t ]))
+				{
+					etime = t;
+					stime = vtimes[endi][t];
+				}
+			}
 		}
-		else cout << "No connection" << endl;
+		cout << "Scenario " << z << endl;
+		if (etime==1e9) cout << "No connection" << endl;
+		else
+		{
+			cout << "Departure " << stime/60*100+stime%60 << " " << startc << endl;
+			cout << "Arrival " << etime/60*100+etime%60 << " " << endc << endl;
+		}
 		if (z!=scenarios) cout << endl;
 	}
 	return 0;
