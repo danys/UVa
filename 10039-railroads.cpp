@@ -2,35 +2,46 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <string.h>
 
-#define maxcities 100
-#define maxminutesinday 1440
+#define maxcities 110
+#define maxminutesinday 1441
+#define maxcitynamelen 100
 
 using namespace std;
 
 int scenarios,ncities,starti,endi,startt;
-string cities[maxcities];
+char cities[maxcities][maxcitynamelen];
 unordered_map<string,int> citymap;
 vector<vector<pair<int,int> > > trains;
 vector<vector<pair<int,int> > > graph;
-vector<vector<int> > vtimes;
+int vtimes[maxcities][maxminutesinday];
 
-int dfs(int node, int maxt)
+string converttime(int x)
 {
-	if ((node==starti) && (maxt>=startt)) return vtimes[node][maxt]=maxt;
-	if (node==starti) return -1;
+	if (x>=1000) return to_string(x);
+	else if (x>=100) return '0'+to_string(x);
+	else if (x>=10) return "00"+to_string(x);
+	else if (x>=1) return "000"+to_string(x);
+	return "0000";
+}
+
+int dfs(int node,int maxt)
+{
+	if ((node == starti) && (maxt >= startt)) return vtimes[node][maxt] = maxt;
+	if (node == starti) return -1;
 	if (vtimes[node][maxt]!=-1) return vtimes[node][maxt];
-	int train,stop,t,nextnode;
-	for(unsigned int i=0;i<graph[node].size();i++)
+	int train,stop,t;
+	for ( int i = 0; i < graph[node].size(); ++i )
 	{
-		train = graph[node][i].first;
-		stop = graph[node][i].second;
-		t = trains[train][stop].first;
-		if (t>maxt) continue;
-		for(int j=0;j<stop;j++)
+		int train = graph[node][i].first;
+		int stop = graph[node][i].second;
+		int t = trains[train][stop].first;
+		if (t > maxt) continue;
+		for ( int j = 0;j<stop; ++j )
 		{
-			nextnode = trains[train][j].second;
-			vtimes[node][t] = max(vtimes[node][t],dfs(nextnode,trains[train][j].first));
+			int next = trains[train][j].second;
+			vtimes[node][t] = max(vtimes[node][t], dfs(next,trains[train][j].first));
 		}
 		vtimes[node][maxt] = max(vtimes[node][maxt],vtimes[node][t]);
 	}
@@ -48,15 +59,11 @@ int main()
 		citymap.clear();
 		trains.clear();
 		graph.clear();
-		vtimes.clear();
 		graph = vector<vector<pair<int,int> > >(ncities);
-		vtimes = vector<vector<int> >(ncities);
 		for(int i=0;i<ncities;i++)
 		{
 			cin >> cities[i];
 			citymap[cities[i]]=i;
-			vtimes[i].clear();
-			for(int j=0;j<maxminutesinday;j++) vtimes[i].push_back(-1);
 		}
 		cin >> ntrains;
 		trains = vector<vector<pair<int,int> > >(ntrains);
@@ -77,6 +84,7 @@ int main()
 		starti = citymap[startc];
 		cin >> endc;
 		endi = citymap[endc];
+		memset( vtimes, -1, sizeof( vtimes ) );
 		dfs(endi,maxminutesinday-1);
 		stime=-1;
 		etime=1e9;
@@ -88,7 +96,7 @@ int main()
 			t = trains[train][stop].first;
 			if (vtimes[endi][t]!=-1)
 			{
-				if ((t<etime) || (etime - stime > t - vtimes[ endi ][ t ]))
+				if ((t<etime) || ((t==etime) && (stime<vtimes[endi][t])))
 				{
 					etime = t;
 					stime = vtimes[endi][t];
@@ -99,10 +107,10 @@ int main()
 		if (etime==1e9) cout << "No connection" << endl;
 		else
 		{
-			cout << "Departure " << stime/60*100+stime%60 << " " << startc << endl;
-			cout << "Arrival " << etime/60*100+etime%60 << " " << endc << endl;
+			cout << "Departure " << converttime(stime/60*100+stime%60) << " " << startc << endl;
+			cout << "Arrival   " << converttime(etime/60*100+etime%60) << " " << endc << endl;
 		}
-		if (z!=scenarios) cout << endl;
+		cout << endl;
 	}
 	return 0;
 }
