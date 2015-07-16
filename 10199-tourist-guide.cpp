@@ -1,89 +1,70 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
-#include <set>
 #include <algorithm>
+#include <cstring>
 
 #define maxnamechars 30
-#define maxlocations 100
+#define maxlocations 110
 
 using namespace std;
 
-struct vertex
-{
-	int id;
-	int num;
-	int low;
-	bool visited;
-	int parentid;
-	vector<int> adjid;
-	vertex(int x)
-	{
-		id = x;
-		num = 0;
-		low = 0;
-		visited = false;
-		parentid = -1;
-		adjid = vector<int>(0);
-	}
-};
-
-int N, R, counter;
+int N, R;
 char names[maxlocations][maxnamechars];
 unordered_map<string,int> namemap;
-vector<vertex> graph;
-
-bool cmp(int x,int y)
-{
-	return (strcmp(names[x],names[y])<0);
-}
-
-
-set<int,bool (*)(int, int)> articulations(cmp);
-
-void labelGraph(int x)
-{
-	vertex &v = graph[x];
-	v.num = counter++;
-	v.visited = true;
-	vector<int> &vect = v.adjid;
-	for(int i=0;i<vect.size();i++)
-	{
-		vertex &next = graph[vect[i]];
-		if (!next.visited)
-		{
-			next.parentid = x;
-			labelGraph(next.id);
-		}
-	}
-}
-
-void computeLows(int x)
-{
-	vertex &v = graph[x];
-	if ((v.parentid==-1) && (v.adjid.size()>1)) articulations.insert(x);
-	v.low = v.num;
-	vector<int> &vect = v.adjid;
-	for(int i=0;i<vect.size();i++)
-	{
-		vertex &next = graph[vect[i]];
-		if (next.num>v.num) //forward edge
-		{
-			computeLows(next.id);
-			if ((next.low>=v.num) && (v.adjid.size()>1)) articulations.insert(x);
-			v.low = min(v.low,next.low);
-		}
-		else //backward edge
-		{
-			if (v.parentid!=next.id) v.low = min(v.low,next.num);
-		}
-	}
-}
+vector<int> graph[maxlocations];
+vector<string> articulations;
+bool visited[maxlocations], visited2[maxlocations];
 
 void insert(int x,int y)
 {
-	graph[x].adjid.push_back(y);
-	graph[y].adjid.push_back(x);
+	graph[x].push_back(y);
+	graph[y].push_back(x);
+}
+
+void dfs(int x, int forbidden, bool* v)
+{
+	v[x]=true;
+	int next;
+	for(int i=0;i<graph[x].size();i++)
+	{
+		next = graph[x][i];
+		if ((!v[next]) && (next!=forbidden)) dfs(next,forbidden,v);
+	}
+}
+
+void solve()
+{
+	bool loop = true;
+	int counter=0;
+	for(int i=0;i<N;i++)
+	{
+		memset(visited,false,sizeof(visited));
+		dfs(i,-1,visited);
+		memset(visited2,false,sizeof(visited2));
+		loop = true;
+		for(int j=0;j<N && loop;j++)
+		{
+			if ((visited[j]) && (i!=j))
+			{
+				dfs(j,i,visited2);
+				loop = false;
+			}
+		}
+		counter=0;
+		for(int j=0;j<N;j++)
+		{
+			if (visited[j]!=visited2[j])
+			{
+					counter++;
+					if (counter>1)
+					{
+						articulations.push_back(names[i]);
+						break;
+					}
+			}
+		}
+	}
 }
 
 int main()
@@ -97,15 +78,12 @@ int main()
 		cin >> N;
 		if (N==0) break;
 		namemap.clear();
-		graph.clear();
+		for(int i=0;i<maxlocations;i++) graph[i].clear();
 		articulations.clear();
-		graph = vector<vertex>();
 		for(int i=0;i<N;i++)
 		{
 			cin >> names[i];
 			namemap[names[i]]=i;
-			vertex v(i);
-			graph.push_back(v);
 		}
 		cin >> R;
 		for(int i=0;i<R;i++)
@@ -115,12 +93,16 @@ int main()
 			index2 = namemap[loc2];
 			insert(index1,index2);
 		}
-		counter=0;
-		labelGraph(0);
-		computeLows(0);
-		cout << "City map #" << cc << ": " << articulations.size() << " camera(s) found" << endl;
-		for(set<int>::iterator i=articulations.begin();i!=articulations.end();++i)	cout << names[*i] << endl;
-		cout << endl;
+		solve();
+		sort(articulations.begin(),articulations.end());
+		if (cc>1) cout << "\n" << endl;
+		cout << "City map #" << cc << ": " << articulations.size() << " camera(s) found";
+		if (articulations.size()>0) cout << endl;
+		for(int i=0;i<articulations.size();++i)
+		{
+				cout << articulations[i];
+				if (i<articulations.size()-1) cout << endl;
+		}
 	}
 	return 0;
 }
