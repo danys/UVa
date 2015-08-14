@@ -1,5 +1,8 @@
 #include <iostream>
 #include <vector>
+#include <string.h>
+
+#define maxmembers 100
 
 using namespace std;
 
@@ -7,18 +10,23 @@ unsigned int M, N; //number of teams and number of tables
 vector<int> team;
 vector<int> table;
 vector<vector<int> > sol;
+bool available[maxmembers];
+int maxteamsize;
 
+//O(N) table search
 int maxtindex()
 {
-    int index=0;
-    for(unsigned int i=0;i<table.size();i++) if (table[i]>table[index]) index=i;
-    return index;
-}
-
-int maxteamsize()
-{
-    int index=0;
-    for(unsigned int i=0;i<team.size();i++) if (team[i]>team[index]) index=i;
+    int index=-1;
+    for(unsigned int i=0;i<table.size();i++)
+    {
+        if (available[i])
+        {
+            index=i;
+            break;
+        }
+    }
+    if (index==-1) return -1;
+    for(unsigned int i=0;i<table.size();i++) if ((table[i]>table[index]) && (available[i])) index=i;
     return index;
 }
 
@@ -26,11 +34,14 @@ bool solve()
 {
     int maxt;
     unsigned int i=0;
-    if (team[maxteamsize()]>N) return false;
+    if (maxteamsize>N) return false;
+    memset(available,true,sizeof(available));
     while((i<M) && (team[i]>0))
     {
         maxt = maxtindex();
+        if (maxt==-1) return false;
         if (table[maxt]<1) return false;
+        available[maxt]=false;
         team[i]--;
         table[maxt]--;
         if (i<sol.size())
@@ -41,10 +52,15 @@ bool solve()
         }
         else
         {
-            vector<int> v(maxt+1);
+            vector<int> v;
+            v.push_back(maxt+1);
             sol.push_back(v);
         }
-        if (team[i]==0) i++;
+        if (team[i]==0)
+        {
+            i++;
+            memset(available,true,sizeof(available));
+        }
     }
     return true;
 }
@@ -74,9 +90,11 @@ int main()
         team.clear();
         table.clear();
         sol.clear();
+        maxteamsize=-1;
         for(unsigned int z=1;z<=M;z++)
         {
             cin >> in;
+            if (in>maxteamsize) maxteamsize=in;
             team.push_back(in);
         }
         for(unsigned int z=1;z<=N;z++)
