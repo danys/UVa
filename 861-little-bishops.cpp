@@ -13,48 +13,53 @@ bool board[maxn][maxn];
 long long res;
 vector<pair<int,int> > v;
 
+void setboard(int x, int y)
+{
+	if (board[x][y]==false) v.push_back(make_pair(x,y));
+	board[x][y]=true;
+}
+
 void disablefields(int i, int j)
 {
 	v.clear();
-	//if ((i<0) || (i>=n)) return;
-	//if ((j<0) || (j>=n)) return;
 	if (board[i][j]==false) v.push_back(make_pair(i,j));
 	board[i][j]=true;
+	int x,y;
 	//Go to top-left
-	for(int x=i-1;x>=0;x--)
+	x=i-1;
+	y=j-1;
+	while((x>=0) && (y>=0))
 	{
-		for(int y=j-1;y>=0;y--)
-		{
-			if (board[x][y]==false) v.push_back(make_pair(x,y));
-			board[x][y]=true;
-		}
+		setboard(x,y);
+		x--;
+		y--;
 	}
 	//Go to top-right
-	for(int x=i+1;x<n;x++)
+	x=i+1;
+	y=j-1;
+	while((x<n) && (y>=0))
 	{
-		for(int y=j-1;y>=0;y--)
-		{
-			if (board[x][y]==false) v.push_back(make_pair(x,y));
-			board[x][y]=true;
-		}
+		setboard(x,y);
+		x++;
+		y--;
 	}
 	//Go to bottom-left
-	for(int x=i-1;x>=0;x--)
+	x=i-1;
+	y=j+1;
+	while((x>=0) && (y<n))
 	{
-		for(int y=j+1;y<n;y++)
-		{
-			if (board[x][y]==false) v.push_back(make_pair(x,y));
-			board[x][y]=true;
-		}
+		setboard(x,y);
+		x--;
+		y++;
 	}
 	//Go to bottom-right
-	for(int x=i+1;x<n;x++)
+	x=i+1;
+	y=j+1;
+	while((x<n) && (y<n))
 	{
-		for(int y=j+1;y<n;y++)
-		{
-			if (board[x][y]==false) v.push_back(make_pair(x,y));
-			board[x][y]=true;
-		}
+		setboard(x,y);
+		x++;
+		y++;
 	}
 }
 
@@ -67,18 +72,23 @@ void enablefields(vector<pair<int,int> > &vect)
 	}
 }
 
-bool issolution(int depth)
+int position(int x, int y)
+{
+	return y*n+x;
+}
+
+bool issolution(int depth, int ipos, int jpos)
 {
 	if (depth==k) return true;
 	for(int i=0;i<n;i++)
 	{
 		for(int j=0;j<n;j++)
 		{
-			if (!board[i][j])
+			if ((position(i,j)>=position(ipos,jpos)) && (board[i][j]==false))
 			{
 				disablefields(i,j);
 				vector<pair<int,int> > d(v);
-				if (issolution(depth+1)) res++;
+				if (issolution(depth+1,i,j)) res++;
 				enablefields(d);
 			}
 		}
@@ -89,7 +99,7 @@ bool issolution(int depth)
 long long solve()
 {
 	res=0;
-	issolution(0);
+	issolution(0,0,0);
 	return res;
 }
 
@@ -99,7 +109,7 @@ int main()
 	{
 		cin >> n >> k;
 		if ((n==0) && (k==0)) break;
-		memset(board,false,sizeof(board));
+		memset(board,false,sizeof(board[0][0])*maxn);
 		cout << solve() << endl;
 	}
 	return 0;
