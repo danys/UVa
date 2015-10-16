@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 
 #define maxFibs 1000
 
@@ -23,20 +22,11 @@ void printNum(char* x)
 
 char* add(char* x, char* y)
 {
-	//cout << "Adding " << endl;
-	//printNum(x);
-	//printNum(y);
-	//cout << "OK" << endl;
-	//DEBUG
 	int lenx = len(x);
 	int leny = len(y);
 	int lenz = lenx>=leny ? lenx : leny;
 	int minxy = lenx<=leny ? lenx : leny;
-	//cout << "Lenx " << lenx << endl;
-	//cout << "Leny " << leny << endl;
-	//cout << "minxy " << minxy << endl;
 	lenz++;
-	//cout << "Lenz " << lenz << endl;
 	char* z = new char[lenz+1];//+1 for '\0' char
 	int digitx, digity, carry, digitz;
 	carry=0;
@@ -48,7 +38,6 @@ char* add(char* x, char* y)
 		digitz = digitx+digity+carry;
 		carry = digitz / 10;
 		digitz %= 10;
-		//cout << "Digit " << (char)(digitz+'0') << endl;
 		z[lenz-1-i] = (char)(digitz+'0'); 
 	}
 	if (lenx>leny)
@@ -59,7 +48,6 @@ char* add(char* x, char* y)
 			digitz = carry+digitx;
 			carry = digitz / 10;
 			digitz %= 10;
-			//cout << "X> Digit " << (char)(digitz+'0') << endl;
 			z[i+lenz-lenx] = (char)(digitz+'0'); 
 		}
 	}
@@ -71,7 +59,6 @@ char* add(char* x, char* y)
 			digitz = carry+digity;
 			carry = digitz / 10;
 			digitz %= 10;
-			//cout << "Y> Digit " << (char)(digitz+'0') << endl;
 			z[i+lenz-leny] = (char)(digitz+'0'); 
 		}
 	} //else if lenx==leny => do nothing
@@ -85,9 +72,6 @@ char* add(char* x, char* y)
 		for(int i=first;i<=lenz;i++) zz[i-first]=z[i];
 		z=zz;
 	}
-	//cout << "Add res " << endl;
-	//printNum(z);
-	//cout << "OK" << endl;
 	return z;
 }
 
@@ -98,10 +82,10 @@ int cmp(char* x, char* y)
 	if (lenx>leny) return 1;
 	else if (lenx<leny) return -1;
 	int i=0;
-	while(x[i]==y[i]) i++;
+	while((i<lenx) && (x[i]==y[i])) i++;
+	if (i==lenx) return 0;
 	if (x[i]>y[i]) return 1;
-	else if(x[i]<y[i]) return -1;
-	else return 0;
+	else return -1;
 }
 
 void compute(char* maxNum)
@@ -112,7 +96,6 @@ void compute(char* maxNum)
 	fib2 = new char[2];
 	fib1[0] = '1';
 	fib1[1] = '\0';
-  	printNum(fib1);
 	fib2[0] = '2';
 	fib2[1] = '\0';
 	fibs[0] = fib1;
@@ -122,7 +105,6 @@ void compute(char* maxNum)
 	{
 		fibs[counter]=fib2;
 		counter++;
-		printNum(fib2);
 		t = add(fib1,fib2);
 		fib1 = fib2;
 		fib2 = t;
@@ -157,11 +139,10 @@ int findIndex(bool high, char* x)
 }
 
 int main()
-{
-	cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
-	compute(createMaxNumStr(100));
-	/*char* a;
+{	compute(createMaxNumStr(130));
+	char* a;
 	char* b;
+	char* t;
 	string astr,bstr;
 	while(1)
 	{
@@ -169,6 +150,13 @@ int main()
 		if ((astr.compare("0")==0) && (bstr.compare("0")==0)) break;
 		a = (char*)astr.c_str();
 		b = (char*)bstr.c_str();
+		if (cmp(b,a)<0) //if a<=b OK otherwise swap the numbers
+		{
+			t = a;
+			a = b;
+			b = a;
+		}
 		cout << findIndex(false,b)-findIndex(true,a)+1 << endl;
-	}*/
+	}
+	return 0;
 }
