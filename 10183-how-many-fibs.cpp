@@ -128,13 +128,41 @@ char* createMaxNumStr(int nDigits)
 
 int findIndex(bool high, char* x)
 {
-	int index=0;
-	while((index<maxFibs) && (cmp(fibs[index],x)<0)) index++;
-	if (high) return index;
+	if (high)
+	{
+		int l=0;
+		int r=maxFibs-1;
+		int m;
+		while(l<=r)
+		{
+			m=(l+r)/2;
+			if (cmp(fibs[m],x)==0) return m;
+			if (cmp(fibs[m],x)<0) l=m+1;
+			else if (cmp(fibs[m],x)>0)
+			{
+				if (m==0) return m;
+				if (cmp(fibs[m-1],x)<0) return m;
+				r=m-1;
+			}
+		}
+	}
 	else
 	{
-		if (cmp(fibs[index],x)==0) return index;
-		else return --index;
+		int l=0;
+		int r=maxFibs-1;
+		int m;
+		while(l<=r)
+		{
+			m=(l+r)/2;
+			if (cmp(fibs[m],x)==0) return m;
+			if (cmp(fibs[m],x)<0)
+			{
+				if (m==maxFibs-1) return m;
+				if (cmp(fibs[m+1],x)>0) return m;
+				l=m+1;
+			}
+			else if (cmp(fibs[m],x)>0) r=m-1;
+		}
 	}
 }
 
