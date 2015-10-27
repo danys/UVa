@@ -206,6 +206,8 @@ char* add(char* &x, char* &y)
 		//minus operation
 		z = new char[reslen+1]; //null terminating char plus one more
 		z[reslen]='\0';
+		xlen = len(x);
+		ylen = len(y);
 		for(int i=0;i<minxy-1;i++)
 		{
 			digitx = x[xlen-1-i]-'0';
@@ -221,6 +223,7 @@ char* add(char* &x, char* &y)
 				carry=1;
 			}
 			digitz %= 10;
+			cout << "Digitz = " << (char)(digitz+'0') << endl;
 			z[reslen-i] = (char)(digitz+'0');
 		}
 		if (xlen>ylen)
@@ -239,6 +242,7 @@ char* add(char* &x, char* &y)
 					carry=1;
 				}
 				digitz %= 10;
+				cout << "Digitz = " << (char)(digitz+'0') << endl;
 				z[i+1] = (char)(digitz+'0');
 			}
 		}
