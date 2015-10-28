@@ -46,13 +46,10 @@ char* neg(char* &x)
 	return x;
 }
 
-int compare(char* x, char* y, bool bypass)
+int compare(char* x, char* y)
 {
-	if (!bypass)
-	{
-		if ((x[0]=='-') && (y[0]=='+')) return -1;
-		else if ((x[0]=='+') && (y[0]=='-')) return 1;
-	}
+	if ((x[0]=='-') && (y[0]=='+')) return -1;
+	else if ((x[0]=='+') && (y[0]=='-')) return 1;
 	int i=0;
 	int lenx = len(x);
 	int leny = len(y);
@@ -68,13 +65,29 @@ int compare(char* x, char* y, bool bypass)
 	}
 	while((x[i]==y[i]) && (x[i]!='\0')){i++;}
 	if (x[i]=='\0') return 0;
-	if (x[i]<y[i]) return -1;
-	else return 1;
+	if (x[i]<y[i])
+	{
+		if (x[0]=='+') return -1;
+		else return 1;
+	}
+	else
+	{
+		if (x[0]=='+') return 1;
+		else return -1;
+	}
 }
 
 int compareABS(char* x, char* y)
 {
-	return compare(x,y,true);
+	int i=1;
+	int lenx = len(x);
+	int leny = len(y);
+	if (lenx>leny) return 1;
+	else if (lenx<leny) return -1;
+	while((x[i]==y[i]) && (x[i]!='\0')){i++;}
+	if (x[i]=='\0') return 0;
+	if (x[i]<y[i]) return -1;
+	else return 1;
 }
 
 //Swap the given arguments
@@ -224,7 +237,7 @@ char* add(char* &x, char* &y)
 			}
 			digitz %= 10;
 			cout << "Digitz = " << (char)(digitz+'0') << endl;
-			z[reslen-i] = (char)(digitz+'0');
+			z[reslen-i-1] = (char)(digitz+'0');
 		}
 		if (xlen>ylen)
 		{
@@ -243,7 +256,7 @@ char* add(char* &x, char* &y)
 				}
 				digitz %= 10;
 				cout << "Digitz = " << (char)(digitz+'0') << endl;
-				z[i+1] = (char)(digitz+'0');
+				z[i] = (char)(digitz+'0');
 			}
 		}
 		else if (xlen<ylen)
@@ -262,7 +275,7 @@ char* add(char* &x, char* &y)
 					carry=1;
 				}
 				digitz %= 10;
-				z[i+1] = (char)(digitz+'0');
+				z[i] = (char)(digitz+'0');
 			}
 		}
 		if (z[1]==0)
@@ -277,6 +290,69 @@ char* add(char* &x, char* &y)
 		else z[0]=(zsign)?'+':'-';
 	}
 
+	return z;
+}
+
+//Multiplies the char array number by a single digit number
+char* simpleMult(char* x, int factor)
+{
+	if (factor>=10) factor %= 10; //ensure proper input
+	int lenx = len(x);
+	char* z = new char[lenx+2]; //+2 for new char and '\0' character
+	z[lenx+1]='\0';
+	int digitx,digitz,carry;
+	int xsign = (x[0]=='+') ? 1 : -1;
+	int fsign = (factor>=0) ? 1 : -1;
+	if (factor<0) factor*=-1;
+	bool zsign = (xsign*fsign==1) ? true : false;
+	carry = 0;
+	for(int i=lenx-1;i>=1;i--)
+	{
+		digitx = x[i]-'0';
+		digitz = digitx*factor+carry;
+		carry = digitz/10;
+		digitz %= 10;
+		z[i+1] = (char)(digitz+'0');
+	}
+	if (carry>0)
+	{
+		z[1] = (char)(carry+'0');
+		z[0] = (zsign) ? '+' : '-';
+	}
+	else
+	{
+		char* zz = new char[lenx+1];
+		for(int i=1;i<lenx+1;i++) zz[i]=z[i+1];
+		zz[0] = (zsign) ? '+' : '-';
+		z = zz;
+	}
+	return z;
+}
+
+char* leftShift(char* x, int c)
+{
+	int lenx = len(x);
+	int lenz = lenx+c+1;//+1 for the '\0' char
+	char* z = new char[lenz];
+	for(int i=0;i<lenx;i++) z[i]=x[i];
+	for(int i=1;i<=c;i++) z[lenx-1+i]='0';
+	z[lenx+c]='\0';
+}
+
+char* mult(char* &x, char* &y)
+{
+	int xlen = len(x);
+	int ylen = len(y);
+	int xsign = (x[0]=='+') ? 1 : -1;
+	int ysign = (y[0]=='+') ? 1 : -1;
+	bool zsign = (xsign*ysign==1) ? true : false;
+	char* z = new char[xlen+ylen+1];
+	int shift=0;
+	for(int i=ylen-1;i>=1;i--)
+	{
+		z = add(z,&leftShift(simpleMult(x,y[i]-'0'),shift));
+		shift++;
+	}
 	return z;
 }
 
@@ -315,11 +391,9 @@ char* add(char* &x, char* &y)
 
 int main(int argc, char** argv)
 {
-	char* x = convertToChar(-99928938);
-	char* y = convertToChar(9930490999);
-	char* z = add(x,y);
+	char* x = convertToChar(9991);
+	char* z = simpleMult(x,-4);
 	printNum(x);
-	printNum(y);
 	printNum(z);
 	/*int ncases,x;
 	cin >> ncases;
