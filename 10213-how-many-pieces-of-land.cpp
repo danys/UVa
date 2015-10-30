@@ -288,7 +288,7 @@ char* add(char* &x, char* &y)
 				z[i] = (char)(digitz+'0');
 			}
 		}
-		if (z[1]==0)
+		if (z[1]=='0')
 		{
 			int pos = 1;
 			while(z[pos]=='0') pos++;
@@ -306,8 +306,16 @@ char* add(char* &x, char* &y)
 //Multiplies the char array number by a single digit number
 char* simpleMult(char* x, int factor)
 {
-	if (factor>=10) factor %= 10; //ensure proper input
 	int lenx = len(x);
+	if (factor==10)
+	{
+		char* res = new char[lenx+2];
+		for(int i=0;i<lenx;i++) res[i]=x[i];
+		res[lenx]='0';
+		res[lenx+1]='\0';
+		return res;
+	}
+	if (factor>=10) factor %= 10; //ensure proper input
 	char* z = new char[lenx+2]; //+2 for new char and '\0' character
 	z[lenx+1]='\0';
 	int digitx,digitz,carry;
@@ -398,81 +406,71 @@ char* divideBy24(char* x)
 {
 	char* c24 = convertToChar(24);
 	char* nc24 = convertToChar(-24);
-	cout << "C24 and nc24" << endl;
-	printNum(c24);
-	printNum(nc24);
 	int xlen = len(x);
-	char* z = new char[xlen+1];
-	z[0]='\0';
-	int p=1;
+	char* z = new char[2];
+	z[0]='+';
+	z[1]='\0';
 	int i=1;
 	char* acc = new char[2];
 	acc[0]='+';
 	acc[1]='\0';
-	printNum(acc);
 	bool foundBeg = false;
 	int digitz=0;
 	char* m;
 	char* nm;
 	int fact=1;
+	int acclen;
 	while(i<xlen)
 	{
 		acc = appendChar(acc,x[i]-'0');
-		cout << "Acc = " << endl;
-		printNum(acc);
-		if (compare(acc,c24)<0)
+		acclen = len(acc);
+		if ((acclen==2) && (acc[1]=='0'))	z = appendChar(z,0);
+		else
 		{
-			if (!foundBeg)
+			if (compare(acc,c24)<0)
 			{
-				while((i<xlen) && (compare(acc,c24)<0))
+				if (!foundBeg)
 				{
-					i++;
-					acc = appendChar(acc,x[i]-'0');
+					while((i<xlen) && (compare(acc,c24)<0))
+					{
+						i++;
+						acc = appendChar(acc,x[i]-'0');
+					}
+					if (i==xlen) return 0;
+					foundBeg=true;
 				}
-				if (i==xlen) return 0;
-				foundBeg=true;
-			}
-			else
-			{
-				while((i<xlen) && (compare(acc,c24)<0))
+				else
 				{
-					i++;
-					z[p]='0';
-					p++;
-					acc = appendChar(acc,x[i]-'0');
+					while((i<xlen) && (compare(acc,c24)<0))
+					{
+						i++;
+						z = appendChar(z,0);
+						acc = appendChar(acc,x[i]-'0');
+					}
+					if (i==xlen) return 0;
 				}
-				if (i==xlen) return 0;
 			}
-		}
-		fact=1;
-		c24[0]='+';
-		m = simpleMult(c24,fact);
-		cout << "m " << m  << endl;
-		while(compare(m,acc)<=0)
-		{
-			fact++;
+			fact=1;
+			c24[0]='+';
 			m = simpleMult(c24,fact);
-			cout << "m" << endl;
-			printNum(m);
-			cout << "Acc" << endl;
-			printNum(acc);
-			cout << "Fact = " << fact << endl;
-		}
-		m = add(m,nc24);
-		fact--;
-		z[p]=(char)(fact+'0');
-		cout << "Setting res char = " << (char)(fact+'0') << endl;
-		nm=pneg(m);
-		acc = add(acc,nm);
-		cout << "New acc = " << endl;
-		printNum(acc);		
-		/*int pos=1;
+			while(compare(m,acc)<=0)
+			{
+				fact++;
+				m = simpleMult(c24,fact);
+			}
+			m = add(m,nc24);	
+			fact--;
+			z = appendChar(z,fact);
+			nm=pneg(m);
+			acc = add(acc,nm);
+		}	
+		int pos=1;
 		while(acc[pos]=='0') pos++;
-		int acclen = len(acc);
-		char* zz = new char[acclen-pos];
-		for(int j=pos;j<acclen+1;j++) zz[j-pos]=acc[j];
-		acc = zz;*/
-		p++;
+		acclen = len(acc);
+		char* zz = new char[acclen+2-pos];
+		for(int j=pos;j<acclen+1;j++) zz[j-pos+1]=acc[j];
+		zz[0]='+';
+		acc = zz;
 		i++;
 	}
 	return z;
@@ -497,7 +495,8 @@ void compute(int x)
 	{
 		char* cres = convertToChar(24);
 		char* cx = convertToChar(x);
-		char* ncx18 = simpleMult(cx,-18);
+		char* cs18 = convertToChar(-18);
+		char* ncx18 = mult(cx,cs18);
 		cres = add(cres,ncx18);
 		char* cx2 = mult(cx,cx);
 		char* cx3 = mult(cx2,cx);
@@ -510,25 +509,21 @@ void compute(int x)
 		cres = add(cres,c23x2);
 		cres = add(cres,nc6x3);
 		cres = add(cres,cx4);
-		cresult = cres;
-		
-		/*int pos=1;
+		int pos=1;
 		while(cres[pos]=='0') pos++;
 		int creslen = len(cres);
-		char* zz = new char[creslen-pos];
-		for(int i=pos;i<creslen+1;i++) zz[i-pos]=cres[i];
-		cresult = zz;*/
+		char* zz = new char[creslen+2-pos];
+		for(int i=pos;i<creslen+1;i++) zz[i-pos+1]=cres[i];
+		zz[0]='+';
+		cresult = zz;
 		cresult = divideBy24(cresult);
+		cresult += 1;
 	}
 }
 
 int main(int argc, char** argv)
 {
-	char* x = convertToChar(86400);
-	//char* y = convertToChar(24);
-	char* z = divideBy24(x);
-	printNum(z);
-	/*int ncases,x;
+	int ncases,x;
 	cin >> ncases;
 	for(int z=1;z<=ncases;z++)
 	{
@@ -536,6 +531,6 @@ int main(int argc, char** argv)
 		compute(x);
 		if (x<=30000) cout << result << endl;
 		else printNum(cresult);
-	}*/
+	}
 	return 0;
 }
